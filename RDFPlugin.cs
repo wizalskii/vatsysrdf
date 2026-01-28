@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows.Forms;
 using vatsys;
 using vatsys.Plugin;
+using Audio = vatsys.Audio;
 
 namespace VatsysRDF
 {
@@ -17,8 +18,8 @@ namespace VatsysRDF
         private Timer cleanupTimer;
         private VatsimDataFeed vatsimData;
 
-        // Track which frequencies we've subscribed to
-        private readonly HashSet<Audio.VSCSFrequency> subscribedFrequencies = new HashSet<Audio.VSCSFrequency>();
+        // Track which frequencies we've subscribed to (using object since VSCSFrequency type varies by VATSYS version)
+        private readonly HashSet<object> subscribedFrequencies = new HashSet<object>();
 
         // Track currently transmitting callsigns with timestamp
         private readonly ConcurrentDictionary<string, DateTime> currentlyTransmitting = new ConcurrentDictionary<string, DateTime>();
@@ -88,10 +89,10 @@ namespace VatsysRDF
         {
             try
             {
-                var currentFreqs = Audio.VSCSFrequencies?.ToList() ?? new List<Audio.VSCSFrequency>();
+                var currentFreqs = Audio.VSCSFrequencies?.Cast<object>().ToList() ?? new List<object>();
 
                 // Subscribe to new frequencies
-                foreach (var freq in currentFreqs)
+                foreach (dynamic freq in currentFreqs)
                 {
                     if (!subscribedFrequencies.Contains(freq))
                     {
@@ -104,7 +105,7 @@ namespace VatsysRDF
 
                 // Unsubscribe from removed frequencies
                 var toRemove = subscribedFrequencies.Where(f => !currentFreqs.Contains(f)).ToList();
-                foreach (var freq in toRemove)
+                foreach (dynamic freq in toRemove)
                 {
                     freq.ReceivingChanged -= Frequency_ReceivingChanged;
                     subscribedFrequencies.Remove(freq);
@@ -122,7 +123,8 @@ namespace VatsysRDF
         {
             try
             {
-                if (sender is Audio.VSCSFrequency freq)
+                dynamic freq = sender;  // Use dynamic to avoid type resolution issues
+                if (freq != null)
                 {
                     System.Diagnostics.Debug.WriteLine($"RDF: Receiving changed on {freq.Frequency / 1000000.0:F3} MHz - Receiving: {freq.Receiving}");
 
@@ -147,7 +149,7 @@ namespace VatsysRDF
             }
         }
 
-        private void DetectTransmittingAircraft(Audio.VSCSFrequency freq)
+        private void DetectTransmittingAircraft(dynamic freq)
         {
             try
             {

@@ -40,11 +40,13 @@
     </Reference>
     <!-- Reference to vatSys.exe - update path as needed -->
     <Reference Include="vatSys">
-      <HintPath>C:\Program Files (x86)\vatSys\vatSys.exe</HintPath>
+      <HintPath>C:\Program Files (x86)\vatSys\bin\vatSys.exe</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="RDFPlugin_Minimal.cs" />
+    <!-- Full version - requires API version matching
     <Compile Include="RDFPlugin.cs" />
     <Compile Include="RDFOverlay.cs">
       <SubType>Form</SubType>
@@ -53,6 +55,7 @@
     <Compile Include="PositionConverter.cs" />
     <Compile Include="RDFSettings.cs" />
     <Compile Include="VatsimDataFeed.cs" />
+    -->
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
