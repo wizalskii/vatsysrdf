@@ -90,10 +90,31 @@ namespace VatsysRDF
         {
             try
             {
-                if (Network.Me == null || Network.Me.Frequencies == null)
+                if (Network.Me == null)
                     return;
 
-                // Get all aircraft on our frequencies from VATSIM data
+                // Observer mode: If no frequencies assigned and ObserverMode is enabled,
+                // show ALL aircraft on ANY frequency
+                if (settings.ObserverMode &&
+                    (Network.Me.Frequencies == null || Network.Me.Frequencies.Length == 0))
+                {
+                    System.Diagnostics.Debug.WriteLine("RDF: Observer mode - showing all aircraft on all frequencies");
+
+                    // Get all callsigns from VATSIM data (all frequencies)
+                    var allCallsigns = vatsimData.GetAllCallsigns();
+
+                    foreach (var callsign in allCallsigns)
+                    {
+                        highlightedAircraft[callsign] = DateTime.UtcNow;
+                    }
+
+                    return;
+                }
+
+                if (Network.Me.Frequencies == null)
+                    return;
+
+                // Normal mode: Get all aircraft on our frequencies from VATSIM data
                 foreach (var freqInt in Network.Me.Frequencies)
                 {
                     // Convert frequency integer to Hz (VATSIM uses different format)

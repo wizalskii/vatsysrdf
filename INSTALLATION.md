@@ -1,43 +1,72 @@
-# Quick Installation Guide
+# VATSYS RDF Plugin - Installation Guide
 
-## For Users (Installing the Plugin)
+## Quick Start (3 Simple Steps)
 
-### Prerequisites
-- VATSYS installed
-- A VATSYS profile set up
+### Step 1: Install the Plugin DLL Files
 
-### Installation Steps
-
-1. **Download** the plugin DLL:
-   - Get `VatsysRDF.dll` from the releases page
-   - Or build from source (see below)
-
-2. **Locate your VATSYS profile folder:**
+1. Download the latest release ZIP from GitHub
+2. Extract the ZIP file
+3. Copy **ONLY** these 2 files to your VATSYS Plugins folder:
    ```
-   Documents\vatSys Files\[YourProfileName]\
+   VatsysRDF.dll
+   Newtonsoft.Json.dll
    ```
 
-3. **Create Plugins folder** (if it doesn't exist):
-   ```
-   Documents\vatSys Files\[YourProfileName]\Plugins\
-   ```
+**Where is my Plugins folder?**
+```
+Documents\vatSys Files\[YourProfileName]\Plugins\
+```
 
-4. **Copy** `VatsysRDF.dll` into the Plugins folder
+For example:
+- `Documents\vatSys Files\NAT\Plugins\`
+- `Documents\vatSys Files\Australia\Plugins\`
 
-5. **(Optional) Add custom label:**
-   - Copy `Labels.xml` to your profile folder, OR
-   - Add this to your existing `Labels.xml`:
+**That's it!** The plugin is now installed, but you won't see indicators yet...
+
+---
+
+### Step 2: Add RDF Indicators to Your Labels (REQUIRED!)
+
+**IMPORTANT**: You **MUST** add the RDF indicator to your Labels.xml file, otherwise you won't see anything!
+
+1. Go to your profile folder: `Documents\vatSys Files\[YourProfileName]\`
+2. Open `Labels.xml` in a text editor (Notepad++ recommended)
+3. Find the line that starts with:
    ```xml
-   <LabelItem Name="RDF_TX" Type="Custom" />
+   <Item Type="LABEL_ITEM_ACID"
+   ```
+4. **Add this line RIGHT ABOVE IT:**
+   ```xml
+   <Item Type="RDF_TX" Colour="IdentFlash" LeftClick="" MiddleClick="" RightClick=""/>
    ```
 
-6. **Restart VATSYS**
+**Example - Before:**
+```xml
+<DataLine>
+  <Item Type="LABEL_ITEM_ACID" Colour="" LeftClick="Label_ACID_Menu"/>
+</DataLine>
+```
 
-7. **Test it:**
-   - Connect to VATSIM
-   - When aircraft transmit, you should see:
-     - Track colors change (white for single TX, red for multiple)
-     - If you added the label: circle indicators (○ or ●) next to callsigns
+**Example - After:**
+```xml
+<DataLine>
+  <Item Type="RDF_TX" Colour="IdentFlash" LeftClick="" MiddleClick="" RightClick=""/>
+  <Item Type="LABEL_ITEM_ACID" Colour="" LeftClick="Label_ACID_Menu"/>
+</DataLine>
+```
+
+**Pro Tip:** Add it to ALL your label types so it shows on every aircraft:
+- Find every `<Item Type="LABEL_ITEM_ACID"` line in your Labels.xml
+- Add the RDF_TX line above each one
+
+---
+
+### Step 3: Restart VATSYS
+
+1. Close VATSYS completely
+2. Start VATSYS again
+3. Connect to VATSIM
+4. Watch for ○ and ● indicators on aircraft labels when they transmit!
 
 ---
 
@@ -82,21 +111,154 @@
 
 ---
 
-## Configuration
+## Configuration (Optional)
 
-After first run, a `RDFSettings.json` file will be created in the Plugins folder:
+The plugin creates a `RDFSettings.json` file in your Plugins folder. You can edit this to customize behavior:
 
 ```json
 {
   "Enabled": true,
-  "SingleTxColor": "#FFFFFF",
-  "ConcurrentTxColor": "#FF0000",
+  "ObserverMode": true,
   "RequireTxFrequency": false,
-  "LowAltitudeFilter": 0
+  "LowAltitudeFilter": 0,
+  "SingleTxColor": "#FFFFFF",
+  "ConcurrentTxColor": "#FF0000"
 }
 ```
 
-Edit this file to customize colors and behavior.
+### Settings Explained
+
+- **Enabled** (`true`/`false`) - Turn the plugin on or off
+- **ObserverMode** (`true`/`false`) - When you have no frequencies assigned (like OBS positions), show RDF for ALL aircraft on all frequencies
+- **RequireTxFrequency** (`true`/`false`) - Not used in current version
+- **LowAltitudeFilter** (number) - Minimum altitude in feet (0 = show all altitudes)
+- **SingleTxColor** - Color for single transmission
+- **ConcurrentTxColor** - Color for multiple concurrent transmissions
+
+---
+
+## How It Works
+
+### For Controller Positions
+When you connect as a controller position (like EGGX_CTR, CZQX_CTR), the plugin:
+1. Monitors your assigned frequencies (both VHF and HF)
+2. Fetches VATSIM network data every 15 seconds
+3. Finds which aircraft are tuned to YOUR frequencies
+4. Shows ○ or ● indicators on those specific aircraft
+
+### For Observer Positions
+When you connect as an observer (like DK_OBS, any _OBS position), the plugin:
+1. Detects you have no assigned frequencies
+2. With `ObserverMode: true` (default), it shows indicators for **ALL** aircraft
+3. You can see RDF indicators for every pilot on the network!
+4. Great for training or monitoring
+
+### The Indicators
+- **○** (empty circle) - Single aircraft transmitting
+- **●** (filled circle) - Multiple aircraft transmitting concurrently
+
+---
+
+## Troubleshooting
+
+### "I don't see any indicators!"
+
+**Check #1: Did you add RDF_TX to your Labels.xml?**
+- This is **REQUIRED** - Step 2 is NOT optional!
+- The plugin can't display anything without this line
+- See Step 2 above for exact instructions
+
+**Check #2: Is the plugin enabled?**
+- Check `RDFSettings.json` in your Plugins folder
+- Make sure `"Enabled": true`
+
+**Check #3: Are you connected to VATSIM?**
+- The plugin needs an active VATSIM network connection
+- Wait 15 seconds after connecting for initial data load
+
+**Check #4: Are there aircraft on your frequencies?**
+- **Controller:** Aircraft must be on YOUR assigned frequencies
+- **Observer:** Check that `ObserverMode` is `true` in RDFSettings.json
+
+### "Plugin not loading"
+
+**Check #1: Are both DLLs in the Plugins folder?**
+- `VatsysRDF.dll` (17 KB) - REQUIRED
+- `Newtonsoft.Json.dll` (700 KB) - REQUIRED
+- Both files must be present!
+
+**Check #2: Correct Plugins folder?**
+- Must be: `Documents\vatSys Files\[YourProfile]\Plugins\`
+- NOT in: `Program Files\vatSys\`
+
+**Check #3: Check Windows Event Viewer**
+- Open Event Viewer > Windows Logs > Application
+- Look for errors from VATSYS
+
+### "Only works for some aircraft"
+
+**Issue:** You only added RDF_TX to one label type
+**Fix:** Add the RDF_TX line to ALL label types in Labels.xml
+- Search for every occurrence of `<Item Type="LABEL_ITEM_ACID"`
+- Add the RDF_TX line above each one
+
+### "Works as controller but not as observer"
+
+**Issue:** ObserverMode is disabled
+**Fix:** Edit `RDFSettings.json` and set `"ObserverMode": true`
+
+---
+
+## Uninstallation
+
+To remove the plugin:
+1. Delete `VatsysRDF.dll` from your Plugins folder
+2. Remove the `<Item Type="RDF_TX".../>` lines from your Labels.xml
+3. (Optional) Delete `RDFSettings.json` from your Plugins folder
+4. Keep `Newtonsoft.Json.dll` if other plugins need it
+
+---
+
+## What's in the Release ZIP?
+
+```
+VatsysRDF-v1.0.0/
+├── VatsysRDF.dll          ← Main plugin (REQUIRED - copy this!)
+├── Newtonsoft.Json.dll    ← JSON library (REQUIRED - copy this!)
+├── RDFSettings.json       ← Example config (auto-created, reference only)
+├── Labels.xml             ← Example labels file (reference only, DON'T copy!)
+├── README.md              ← Main documentation
+└── INSTALLATION.txt       ← This guide
+```
+
+**IMPORTANT:**
+- **DO copy:** The 2 DLL files to your Plugins folder
+- **DON'T copy:** Labels.xml (modify your existing one instead!)
+- **DON'T copy:** RDFSettings.json (it will be created automatically)
+
+---
+
+## Quick Checklist
+
+Before reporting issues, verify:
+
+- [ ] Copied `VatsysRDF.dll` to Plugins folder
+- [ ] Copied `Newtonsoft.Json.dll` to Plugins folder
+- [ ] Added `<Item Type="RDF_TX".../>` line to Labels.xml
+- [ ] Added it to EVERY label type (Limited, Normal, Extended, etc.)
+- [ ] Saved Labels.xml
+- [ ] Restarted VATSYS completely
+- [ ] Connected to VATSIM network
+- [ ] Waited 15 seconds for data to load
+- [ ] Checked RDFSettings.json has `"Enabled": true`
+- [ ] If observer: Checked `"ObserverMode": true`
+
+**Still having issues?** Open an issue on GitHub with:
+- Your Labels.xml file (attach it)
+- Your RDFSettings.json file (attach it)
+- VATSYS version number
+- Whether you're connecting as controller or observer
+- What position code you're using (e.g., EGGX_CTR, DK_OBS)
 
 ---
 

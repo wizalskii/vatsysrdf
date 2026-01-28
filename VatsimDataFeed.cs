@@ -172,5 +172,13 @@ namespace VatsysRDF
 
             return 0;
         }
+
+        /// <summary>
+        /// Get all callsigns currently in VATSIM data (for observer mode)
+        /// </summary>
+        public HashSet<string> GetAllCallsigns()
+        {
+            return new HashSet<string>(callsignFrequencies.Keys);
+        }
     }
 }

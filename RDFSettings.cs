@@ -34,6 +34,7 @@ namespace VatsysRDF
         public bool RequireTxFrequency { get; set; } = false;
         public int LowAltitudeFilter { get; set; } = 0; // feet
         public int PenWidth { get; set; } = 2; // Circle line width
+        public bool ObserverMode { get; set; } = true; // Show all aircraft when no frequencies assigned
 
         private static string SettingsPath => Path.Combine(
             Path.GetDirectoryName(typeof(RDFSettings).Assembly.Location) ?? "",
