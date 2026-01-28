@@ -26,15 +26,27 @@ The plugin uses VATSYS's Audio API to detect when transmissions occur:
 
 ## Installation
 
-1. **Build** the project to generate `VatsysRDF.dll`
-2. **Copy** `VatsysRDF.dll` to your VATSYS profile's `Plugins` folder:
+### Quick Start
+
+> **Note:** A pre-built DLL is not yet available. You'll need to build from source. See [BUILD.md](BUILD.md) for instructions.
+
+1. **Build the plugin:**
+   - See detailed instructions in [BUILD.md](BUILD.md)
+   - Requires Visual Studio and VATSYS installed
+   - Build in **Release** configuration
+
+2. **Install the DLL:**
+   - Copy `bin\Release\VatsysRDF.dll` to your VATSYS profile's `Plugins` folder:
    - Typical path: `Documents\vatSys Files\[ProfileName]\Plugins\`
-3. **Create** the Plugins folder if it doesn't exist
-4. **Add Label Item** (optional for label indicator):
-   - Edit your profile's `Labels.xml` to include the `RDF_TX` custom item
-   - Or copy the included `Labels.xml` to your profile
-   - Add `RDF_TX` to your aircraft label templates
-5. **Restart VATSYS**
+   - Create the Plugins folder if it doesn't exist
+
+3. **Add Label Item** (optional for label indicator):
+   - Copy `Labels.xml` to your profile folder
+   - Edit your aircraft label templates in VATSYS to include `RDF_TX`
+
+4. **Restart VATSYS**
+
+**Detailed Guide:** See [INSTALLATION.md](INSTALLATION.md)
 
 ## Configuration
 
@@ -222,9 +234,19 @@ Potential improvements:
 ### Why No TrackAudio?
 This plugin works entirely with VATSYS's internal AFV system and VATSIM public data. No external dependencies required!
 
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+- 🐛 [Report a bug](https://github.com/wizalskii/vatsysrdf/issues/new?template=bug_report.md)
+- 💡 [Request a feature](https://github.com/wizalskii/vatsysrdf/issues/new?template=feature_request.md)
+- 🔧 [Submit a pull request](https://github.com/wizalskii/vatsysrdf/pulls)
+
 ## License
 
-MIT License - feel free to modify and distribute
+MIT License - See [LICENSE](LICENSE) for details
+
+Copyright (c) 2026 wizalskii
 
 ## Credits
 
