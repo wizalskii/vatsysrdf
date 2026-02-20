@@ -46,13 +46,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <!-- Working Version with Colors (ACTIVE) -->
     <Compile Include="RDFPlugin_Working.cs" />
     <Compile Include="RDFSettings.cs" />
     <Compile Include="VatsimDataFeed.cs" />
-    <!-- Minimal version
-    <Compile Include="RDFPlugin_Minimal.cs" />
+    <!-- Future: Zoom-Responsive (needs API investigation)
+    <Compile Include="RDFPlugin_ZoomResponsive.cs" />
+    <Compile Include="RDFOverlay_ZoomResponsive.cs">
+      <SubType>Form</SubType>
+    </Compile>
     -->
-    <!-- Original version - API mismatch
+    <!-- Other versions
+    <Compile Include="RDFPlugin_Minimal.cs" />
     <Compile Include="RDFPlugin.cs" />
     <Compile Include="RDFOverlay.cs">
       <SubType>Form</SubType>

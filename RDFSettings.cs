@@ -10,7 +10,7 @@ namespace VatsysRDF
         public bool Enabled { get; set; } = true;
 
         [JsonIgnore]
-        public Color SingleTxColor { get; set; } = Color.White;
+        public Color SingleTxColor { get; set; } = Color.Teal;
 
         [JsonProperty("SingleTxColor")]
         public string SingleTxColorHex

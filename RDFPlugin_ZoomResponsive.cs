@@ -11,27 +11,32 @@ using vatsys.Plugin;
 namespace VatsysRDF
 {
     /// <summary>
-    /// Radio Direction Finder Plugin for VATSYS
-    /// Shows visual indicators for aircraft based on VATSIM data correlation
+    /// Radio Direction Finder Plugin for VATSYS with Zoom-Responsive Rings
+    /// Shows visual indicators and rings that scale with zoom level
     /// </summary>
     [Export(typeof(IPlugin))]
     public class RDFPlugin : IPlugin
     {
-        public string Name => "Radio Direction Finder (RDF)";
+        public string Name => "Radio Direction Finder (RDF) - Zoom Responsive";
 
         private RDFSettings settings;
         private VatsimDataFeed vatsimData;
         private Timer updateTimer;
+        private RDFOverlay overlay;
 
         // Track currently transmitting callsigns with timestamp
         private readonly ConcurrentDictionary<string, DateTime> highlightedAircraft =
             new ConcurrentDictionary<string, DateTime>();
 
+        // Track aircraft positions for overlay drawing
+        private readonly ConcurrentDictionary<string, Coordinate> aircraftPositions =
+            new ConcurrentDictionary<string, Coordinate>();
+
         public RDFPlugin()
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("RDF: Plugin initializing...");
+                System.Diagnostics.Debug.WriteLine("RDF: Plugin initializing (Zoom Responsive)...");
 
                 // Load settings
                 settings = RDFSettings.Load();
@@ -40,17 +45,19 @@ namespace VatsysRDF
                 vatsimData = new VatsimDataFeed();
                 vatsimData.Start();
 
-                // Set up update timer for cleanup
+                // Create overlay window for drawing rings
+                overlay = new RDFOverlay(settings, highlightedAircraft, aircraftPositions);
+                overlay.Show();
+
+                // Set up update timer
                 updateTimer = new Timer
                 {
-                    Interval = 1000 // 1 second
+                    Interval = 100 // 100ms for smooth updates
                 };
                 updateTimer.Tick += UpdateTimer_Tick;
                 updateTimer.Start();
 
                 System.Diagnostics.Debug.WriteLine("RDF: Plugin initialized successfully");
-                System.Diagnostics.Debug.WriteLine("RDF: Monitoring VATSIM network for frequency data");
-                System.Diagnostics.Debug.WriteLine("RDF: Use Ctrl+T hotkey to highlight aircraft on your frequency");
             }
             catch (Exception ex)
             {
@@ -65,11 +72,13 @@ namespace VatsysRDF
             try
             {
                 // Auto-highlight aircraft on controller's frequencies
-                // For observers, Network.IsConnected might be false, so check Network.Me instead
                 if (settings.Enabled && Network.Me != null)
                 {
                     AutoHighlightAircraftOnFrequencies();
                 }
+
+                // Update aircraft positions for overlay
+                UpdateAircraftPositions();
 
                 // Clean up old highlights (after 5 seconds)
                 var cutoff = DateTime.UtcNow.AddSeconds(-5);
@@ -79,21 +88,46 @@ namespace VatsysRDF
                 foreach (var callsign in stale)
                 {
                     highlightedAircraft.TryRemove(callsign, out _);
+                    aircraftPositions.TryRemove(callsign, out _);
                 }
 
-                // Debug output every 10 seconds
-                if (DateTime.UtcNow.Second % 10 == 0)
+                // Update overlay window position and trigger redraw
+                if (MMI.FPASD != null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"RDF: Highlighted aircraft count: {highlightedAircraft.Count}");
-                    if (highlightedAircraft.Count > 0)
+                    overlay.UpdatePosition(MMI.FPASD.Bounds);
+                }
+
+                overlay.Invalidate();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"RDF: Error in update timer: {ex}");
+            }
+        }
+
+        private void UpdateAircraftPositions()
+        {
+            try
+            {
+                // Get all FDRs and update positions for highlighted aircraft
+                var fdrs = FDP2.GetFDRs;
+                if (fdrs == null) return;
+
+                foreach (var fdr in fdrs)
+                {
+                    if (highlightedAircraft.ContainsKey(fdr.Callsign))
                     {
-                        System.Diagnostics.Debug.WriteLine($"RDF: Highlighted callsigns: {string.Join(", ", highlightedAircraft.Keys.Take(5))}");
+                        var location = fdr.GetLocation();
+                        if (location != null)
+                        {
+                            aircraftPositions[fdr.Callsign] = location;
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"RDF: Error in update timer: {ex}");
+                System.Diagnostics.Debug.WriteLine($"RDF: Error updating aircraft positions: {ex}");
             }
         }
 
@@ -104,45 +138,30 @@ namespace VatsysRDF
                 if (Network.Me == null)
                     return;
 
-                // Observer mode: If no frequencies assigned and ObserverMode is enabled,
-                // show ALL aircraft on ANY frequency
+                // Observer mode: show ALL aircraft when no frequencies assigned
                 if (settings.ObserverMode &&
                     (Network.Me.Frequencies == null || Network.Me.Frequencies.Length == 0))
                 {
-                    // Get all callsigns from VATSIM data (all frequencies)
                     var allCallsigns = vatsimData.GetAllCallsigns();
-
-                    System.Diagnostics.Debug.WriteLine($"RDF: Observer mode - showing {allCallsigns.Count} aircraft on all frequencies");
-
                     foreach (var callsign in allCallsigns)
                     {
                         highlightedAircraft[callsign] = DateTime.UtcNow;
                     }
-
                     return;
                 }
 
                 if (Network.Me.Frequencies == null)
                     return;
 
-                // Normal mode: Get all aircraft on our frequencies from VATSIM data
+                // Normal mode: Get aircraft on our frequencies
                 foreach (var freqInt in Network.Me.Frequencies)
                 {
-                    // Convert frequency integer to Hz (VATSIM uses different format)
-                    uint freqHz = (uint)(freqInt * 1000); // Convert to Hz
-
+                    uint freqHz = (uint)(freqInt * 1000);
                     var callsignsOnFreq = vatsimData.GetCallsignsOnFrequency(freqHz);
 
-                    if (callsignsOnFreq.Count > 0)
+                    foreach (var callsign in callsignsOnFreq)
                     {
-                        System.Diagnostics.Debug.WriteLine(
-                            $"RDF: Found {callsignsOnFreq.Count} aircraft on frequency {freqInt / 1000.0:F3} MHz");
-
-                        foreach (var callsign in callsignsOnFreq)
-                        {
-                            // Highlight this aircraft
-                            highlightedAircraft[callsign] = DateTime.UtcNow;
-                        }
+                        highlightedAircraft[callsign] = DateTime.UtcNow;
                     }
                 }
             }
@@ -156,7 +175,15 @@ namespace VatsysRDF
 
         public void OnFDRUpdate(FDP2.FDR updated)
         {
-            // Track FDR updates if needed
+            // Update position when FDR updates
+            if (updated != null && highlightedAircraft.ContainsKey(updated.Callsign))
+            {
+                var location = updated.GetLocation();
+                if (location != null)
+                {
+                    aircraftPositions[updated.Callsign] = location;
+                }
+            }
         }
 
         public void OnRadarTrackUpdate(RDP.RadarTrack updated)
@@ -164,20 +191,8 @@ namespace VatsysRDF
             // Track radar updates if needed
         }
 
-        private static int labelCallCount = 0;
-        private static DateTime lastLabelDebug = DateTime.MinValue;
-
         public CustomLabelItem GetCustomLabelItem(string itemType, Track track, FDP2.FDR flightDataRecord, RDP.RadarTrack radarTrack)
         {
-            // Debug logging every 5 seconds
-            labelCallCount++;
-            if ((DateTime.UtcNow - lastLabelDebug).TotalSeconds >= 5)
-            {
-                System.Diagnostics.Debug.WriteLine($"RDF: GetCustomLabelItem called {labelCallCount} times, enabled={settings.Enabled}, highlighted={highlightedAircraft.Count}");
-                lastLabelDebug = DateTime.UtcNow;
-                labelCallCount = 0;
-            }
-
             if (!settings.Enabled || itemType != "RDF_TX")
                 return null;
 
@@ -197,13 +212,15 @@ namespace VatsysRDF
                 // Check if this aircraft is highlighted
                 if (highlightedAircraft.ContainsKey(callsign))
                 {
-                    System.Diagnostics.Debug.WriteLine($"RDF: Showing TX indicator for {callsign}");
+                    int count = highlightedAircraft.Count;
+                    string indicator = count > 1 ? "●" : "○";
+                    Color highlightColor = count > 1 ? settings.ConcurrentTxColor : settings.SingleTxColor;
 
                     return new CustomLabelItem
                     {
-                        Text = "TX"
-                        // Note: ForeColour property doesn't exist in this vatSys version
-                        // Track coloring via SelectASDTrackColour() works instead
+                        Text = indicator,
+                        ForeColourIdentity = Colours.Identities.Custom,
+                        ForeColour = new CustomColour(highlightColor.R, highlightColor.G, highlightColor.B)
                     };
                 }
             }
@@ -236,7 +253,6 @@ namespace VatsysRDF
                     int count = highlightedAircraft.Count;
                     Color highlightColor = count > 1 ? settings.ConcurrentTxColor : settings.SingleTxColor;
 
-                    // Use correct CustomColour constructor: new CustomColour(R, G, B)
                     return new CustomColour(highlightColor.R, highlightColor.G, highlightColor.B);
                 }
             }
@@ -250,7 +266,6 @@ namespace VatsysRDF
 
         public CustomColour SelectGroundTrackColour(Track track)
         {
-            // Use same logic as ASD tracks
             return SelectASDTrackColour(track);
         }
     }
