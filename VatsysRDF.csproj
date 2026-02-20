@@ -46,20 +46,19 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <!-- Working Version with Colors (ACTIVE) -->
-    <Compile Include="RDFPlugin_Working.cs" />
+    <!-- Map Layer Version (ACTIVE) - Required for ATOP profile -->
+    <Compile Include="RDFPlugin_WithMapLayer.cs" />
     <Compile Include="RDFSettings.cs" />
     <Compile Include="VatsimDataFeed.cs" />
-    <!-- Future: Zoom-Responsive (needs API investigation)
-    <Compile Include="RDFPlugin_ZoomResponsive.cs" />
-    <Compile Include="RDFOverlay_ZoomResponsive.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    -->
     <!-- Other versions
+    <Compile Include="RDFPlugin_Working.cs" />
     <Compile Include="RDFPlugin_Minimal.cs" />
     <Compile Include="RDFPlugin.cs" />
+    <Compile Include="RDFPlugin_ZoomResponsive.cs" />
     <Compile Include="RDFOverlay.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="RDFOverlay_ZoomResponsive.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="TransmissionTracker.cs" />
